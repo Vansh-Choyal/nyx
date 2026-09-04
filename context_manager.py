@@ -17,6 +17,14 @@ class ContextManager():
     def add_user_message(self, message):
         self.context.append({'role':'user', "content": message})
 
+    def add_tool_response(self, call_id, content):
+        self.context.append({'role':'tool',
+                            "tool_call_id": call_id,
+                            "content": content
+                            })
+
+    def add_custom_response(self, response):
+        self.context.append(response)
     # @property
     # def prompt(self):
     #     return 
