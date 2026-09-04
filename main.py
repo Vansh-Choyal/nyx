@@ -21,7 +21,23 @@ resp = client.chat.completions.create(
     stream=True
 )
 
+
+_generated_once = False
+for chunk in resp:
+    if not chunk.choices:
+        break
+
+    delta = chunk.choices[0].delta
+
+    if delta.reasoning_content is not None:
+        print(delta.reasoning_content, flush=True, end="")
+
+    if not _generated_once:
+        print()
+        _generated_once = True
+    if delta.content is not None:
+        print(delta.content, flush=True, end="")
 # print(resp.choices[0])
-print(resp.choices[0].message.reasoning_content)
-print("---")
-print(resp.choices[0].message.content)
+# print(resp.choices[0].message.reasoning_content)
+# print("---")
+# print(resp.choices[0].message.content)
