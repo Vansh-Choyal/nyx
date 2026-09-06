@@ -85,6 +85,31 @@ tools = [
                 "required": ["pattern", "path"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "patch_file",
+            "description": "Replaces an exact piece of text in a file with new text. The old text must match exactly.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "The path of the file to modify."
+                    },
+                    "old_text": {
+                        "type": "string",
+                        "description": "The exact text in the file that should be replaced."
+                    },
+                    "new_text": {
+                        "type": "string",
+                        "description": "The text that should replace old_text."
+                    }
+                },
+                "required": ["file_path", "old_text", "new_text"]
+            }
+        }
     }
 ]
 
