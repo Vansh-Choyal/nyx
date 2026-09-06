@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from context_manager import context_manager
 import os
 from core import config
-from context_manager import context_manager
 from tools.terminal import run_command
 import json
 
@@ -12,7 +11,7 @@ client = OpenAI(
     base_url="https://api.deepinfra.com/v1/openai", 
     api_key=os.getenv("DEEPINFRA_API_TOKEN"))
 
-context_manager.add_user_message("What project are we working on?")
+context_manager.add_user_message("What project are we working on? Can you find any bugs? Do NOT change anything, just tell me.")
 # print(config['model'])
 
 # print(context_manager.context)
@@ -41,15 +40,13 @@ while True:
     resp = client.chat.completions.create(
         model=config['model'],
         messages=context_manager.context,
-        reasoning_effort="xhigh",
+        reasoning_effort="low",
         stream=True,
         tools=tools
     )
 
-
-    _generated_once = False
-
     tools_queue = {}
+    generated_content = ""
 
     for chunk in resp:
         if not chunk.choices:
@@ -60,75 +57,77 @@ while True:
         if delta.reasoning_content is not None:
             GREY = "\033[90m"
             RESET = "\033[0m"
+            print(
+                f"{GREY}{delta.reasoning_content}{RESET}",
+                flush=True,
+                end=""
+            )
 
-            print(f"{GREY}{delta.reasoning_content}{RESET}", flush=True, end="")
-            
-        if not _generated_once:
-            print()
-            _generated_once = True
-        
         if delta.content is not None:
+            generated_content += delta.content
             print(delta.content, flush=True, end="")
 
         if delta.tool_calls:
             tool = delta.tool_calls[0]
-            if tool.function.name or tool.function.arguments:
-                # print(tool)
-                tool_index = str(tool.index)
-                if tool_index not in tools_queue:
-                    tools_queue[tool_index] = {'id':'', 'arguments':'', 'name':''}
-                    tools_queue[tool_index]['id'] = tool.id
+            tool_index = str(tool.index)
 
-                if tool_index in tools_queue:
-                    if not tools_queue[tool_index]['arguments'] and tool.function.arguments:
-                        tools_queue[tool_index]['arguments'] = tool.function.arguments
+            if tool_index not in tools_queue:
+                tools_queue[tool_index] = {
+                    "id": tool.id or "",
+                    "name": "",
+                    "arguments": ""
+                }
 
-                    if not tools_queue[tool_index]['name'] and tool.function.name:
-                        tools_queue[tool_index]['name'] = tool.function.name
+            if tool.function.name:
+                tools_queue[tool_index]["name"] += tool.function.name
 
-                # for tool in tools_queue:
-                #     if tool tool['id']
-                # if tool.function.name:
+            if tool.function.arguments:
+                tools_queue[tool_index]["arguments"] += tool.function.arguments
+                print(f"Running command: {tool.function.arguments}")
 
-                for queue in list(tools_queue):
-                    current_queue = tools_queue[queue]
-                    if current_queue['arguments'] and current_queue['name']:
-                        print(f"Calling {current_queue['name']} with arguments: {current_queue['arguments']}.")
+    # print()
 
-                        result = globals()[current_queue['name']](**json.loads(current_queue['arguments']))
-                        context_manager.add_custom_response(
-                            {
-                                "role": "assistant",
-                                "content": None,
-                                "tool_calls":[
-                                        {
-                                            "id": current_queue['id'],
-                                            "type": "function",
-                                            "function": {
-                                                "name": current_queue['name'],
-                                                "arguments": json.loads(current_queue['arguments'])
-                                            }
-                                        }
-                                    ]
-                            }
-                        )
-                        context_manager.add_tool_response(current_queue['id'], result)
-                        del tools_queue[queue]
+    # ---------------------------------------------------------
+    # IMPORTANT:
+    # Save the ASSISTANT message before saving tool responses.
+    # ---------------------------------------------------------
 
+    if tools_queue:
+        assistant_tool_calls = []
 
-                #     tool_queue_name = tool.function.name
+        for queue in tools_queue.values():
+            assistant_tool_calls.append({
+                "id": queue["id"],
+                "type": "function",
+                "function": {
+                    "name": queue["name"],
+                    "arguments": queue["arguments"]
+                }
+            })
 
-                # if tool_queue_name and tool.function.arguments:
-                #     print(f"Calling {tool_queue_name} with arguments: {tool.function.arguments}.")
-                #     result = globals()[tool_queue_name](**json.loads(tool.function.arguments))
+        context_manager.context.append({
+            "role": "assistant",
+            "content": generated_content or None,
+            "tool_calls": assistant_tool_calls
+        })
 
-                #     print(result)
+        # Now execute tools and add their results
+        for queue in tools_queue.values():
+            result = globals()[queue["name"]](
+                **json.loads(queue["arguments"])
+            )
 
-                #     tool_queue_name = ""
+            context_manager.add_tool_response(
+                queue["id"],
+                result
+            )
 
-    if context_manager.context[-1]['role'] != 'tool':
-        print("Stopping the task")
-        break
+        # Continue to next model generation
+        continue
+
+    # No tool call => model is finished
+    print("Stopping the task")
+    break
 
 print('---'*5)
 print(context_manager.context)

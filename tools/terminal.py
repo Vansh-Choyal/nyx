@@ -7,7 +7,8 @@ def run_command(cmd):
         text=True
     )
 
-    return f""""return_code: {result.returncode}
-"stdout":{result.stdout}
-"stderr": {result.stderr}"""
-    # return {"return_code": result.returncode, "stdout":result.stdout, "stderr": result.stderr}
+    return f'''
+        "return_code": {result.returncode},
+        "stdout": {result.stdout},
+        "stderr": {result.stderr}
+    '''
