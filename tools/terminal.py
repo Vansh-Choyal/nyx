@@ -6,6 +6,7 @@ def run_command(cmd):
         capture_output=True,
         text=True
     )
+    print(f"Running command: {cmd}")
 
     return f'''
         "return_code": {result.returncode},

@@ -4,6 +4,7 @@ from context_manager import context_manager
 import os
 from core import config
 from tools.terminal import run_command
+from tools.read import read_file
 import json
 
 load_dotenv()
@@ -31,6 +32,31 @@ tools = [
                     }
                 },
                 "required": ["cmd"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_file",
+            "description": "Reads a file from line x to line y.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "The file you want to read"
+                    },
+                    "start_line": {
+                        "type": "int",
+                        "description": "The starting line number of the file you want to read. 1 By default."
+                    },
+                    "end_line": {
+                        "type": "int",
+                        "description": "The ending line number of the file you want to read. 0 by default. If set to 0, it'd return the whole file."
+                    }
+                },
+                "required": ["file_path", "start_file", "end_line"]
             }
         }
     }
@@ -83,7 +109,6 @@ while True:
 
             if tool.function.arguments:
                 tools_queue[tool_index]["arguments"] += tool.function.arguments
-                print(f"Running command: {tool.function.arguments}")
 
     # print()
 
@@ -129,8 +154,6 @@ while True:
     print("Stopping the task")
     break
 
-print('---'*5)
-print(context_manager.context)
 # print(resp.choices[0])
 # print(resp.choices[0].message.reasoning_content)
 # print("---")
