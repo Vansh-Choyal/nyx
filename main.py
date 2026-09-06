@@ -6,6 +6,7 @@ from core import config
 from tools.terminal import run_command
 from tools.read import read_file
 from tools.grep import grep
+from tools.patch import patch_file
 import json
 
 load_dotenv()
@@ -162,11 +163,6 @@ while True:
                 tools_queue[tool_index]["arguments"] += tool.function.arguments
 
     # print()
-
-    # ---------------------------------------------------------
-    # IMPORTANT:
-    # Save the ASSISTANT message before saving tool responses.
-    # ---------------------------------------------------------
 
     if tools_queue:
         assistant_tool_calls = []
