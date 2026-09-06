@@ -5,6 +5,7 @@ import os
 from core import config
 from tools.terminal import run_command
 from tools.read import read_file
+from tools.grep import grep
 import json
 
 load_dotenv()
@@ -39,24 +40,49 @@ tools = [
         "type": "function",
         "function": {
             "name": "read_file",
-            "description": "Reads a file from line x to line y.",
+            "description": "Reads a file from line x to line y. If end_line is 0, reads until the end of the file.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "file_path": {
                         "type": "string",
-                        "description": "The file you want to read"
+                        "description": "The path of the file you want to read."
                     },
                     "start_line": {
-                        "type": "int",
-                        "description": "The starting line number of the file you want to read. 1 By default."
+                        "type": "integer",
+                        "description": "The starting line number. Defaults to 1."
                     },
                     "end_line": {
-                        "type": "int",
-                        "description": "The ending line number of the file you want to read. 0 by default. If set to 0, it'd return the whole file."
+                        "type": "integer",
+                        "description": "The ending line number. Defaults to 0. If set to 0, reads the entire file from start_line to the end."
                     }
                 },
-                "required": ["file_path", "start_file", "end_line"]
+                "required": ["file_path"]
+            }
+        }
+    },
+    {
+    "type": "function",
+        "function": {
+            "name": "grep",
+            "description": "Searches for a pattern in a file or directory using grep and returns matching lines with line numbers.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pattern": {
+                        "type": "string",
+                        "description": "The text or pattern you want to search for."
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "The file or directory to search in."
+                    },
+                    "recursive": {
+                        "type": "boolean",
+                        "description": "Whether to search recursively through directories. Defaults to false."
+                    }
+                },
+                "required": ["pattern", "path"]
             }
         }
     }
