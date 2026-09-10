@@ -7,6 +7,8 @@ from tools.terminal import run_command
 from tools.read import read_file
 from tools.grep import grep
 from tools.patch import patch_file
+from tools.write import write_file
+
 import json
 
 load_dotenv()
@@ -14,7 +16,7 @@ client = OpenAI(
     base_url="https://api.deepinfra.com/v1/openai", 
     api_key=os.getenv("DEEPINFRA_API_TOKEN"))
 
-context_manager.add_user_message("What project are we working on? Can you find any bugs? Do NOT change anything, just tell me.")
+context_manager.add_user_message("Create me a pygame snake game, and then run it. Don't instal pygame. Its already installed")
 # print(config['model'])
 
 # print(context_manager.context)
@@ -109,6 +111,27 @@ tools = [
                     }
                 },
                 "required": ["file_path", "old_text", "new_text"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "write_file",
+            "description": "Creates a new file and writes content to it. If the file already exists, returns an error instructing the user to use patch_file instead.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "The path of the file to create."
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "The content to write into the new file."
+                    }
+                },
+                "required": ["file_path", "content"]
             }
         }
     }

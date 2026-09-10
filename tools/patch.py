@@ -1,5 +1,10 @@
+from core import config, _resolve_path
+
+
 def patch_file(file_path, old_text, new_text):
     try:
+        file_path = _resolve_path(file_path)
+
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
 
@@ -9,7 +14,10 @@ def patch_file(file_path, old_text, new_text):
             return "Error: old_text was not found in the file."
 
         if count > 1:
-            return f"Error: old_text was found {count} times. It must match exactly once."
+            return (
+                f"Error: old_text was found {count} times. "
+                "It must match exactly once."
+            )
 
         content = content.replace(old_text, new_text, 1)
 
