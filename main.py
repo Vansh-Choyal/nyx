@@ -16,7 +16,7 @@ client = OpenAI(
     base_url="https://api.deepinfra.com/v1/openai", 
     api_key=os.getenv("DEEPINFRA_API_TOKEN"))
 
-context_manager.add_user_message("Create me a pygame snake game, and then run it. Don't instal pygame. Its already installed")
+context_manager.add_user_message("Change the snake's color to Blue. And first make the copy of the current game.")
 # print(config['model'])
 
 # print(context_manager.context)

@@ -2,13 +2,14 @@ import subprocess
 from core import config
 
 def run_command(cmd):
+    print(f"Running command: {cmd}")
+    
     result = subprocess.run(
         ["wsl", "bash", "-c", cmd],
         cwd=config["current_directory"],  # Python handles the Windows path execution here
         capture_output=True,
         text=True
     )
-    print(f"Running command: {cmd}")
 
     # Added escaping for quotes/newlines in stdout/stderr to prevent string breakages
     import json

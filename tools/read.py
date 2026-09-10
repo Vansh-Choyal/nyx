@@ -2,6 +2,7 @@ from core import config, _resolve_path
 
 
 def read_file(file_path, start_line=1, end_line=0):
+    print(f"Reading {file_path} from {start_line} to {end_line}")
     try:
         file_path = _resolve_path(file_path)
 

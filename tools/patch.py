@@ -2,6 +2,7 @@ from core import config, _resolve_path
 
 
 def patch_file(file_path, old_text, new_text):
+    print(f"Patching {file_path}")
     try:
         file_path = _resolve_path(file_path)
 
