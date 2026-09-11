@@ -1,4 +1,4 @@
-from core import config, _resolve_path
+from core.core import config, _resolve_path
 
 
 def patch_file(file_path, old_text, new_text):

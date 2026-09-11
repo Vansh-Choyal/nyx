@@ -1,4 +1,4 @@
-from core import config
+from core.core import config
 
 class ContextManager():
     def __init__(self, system_prompt = ""):

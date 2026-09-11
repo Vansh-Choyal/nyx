@@ -1,6 +1,6 @@
 import shlex
 
-from core import config, _resolve_path
+from core.core import config, _resolve_path
 from tools.terminal import run_command
 
 

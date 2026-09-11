@@ -1,4 +1,4 @@
-from core import config, _resolve_path
+from core.core import config, _resolve_path
 
 
 def read_file(file_path, start_line=1, end_line=0):

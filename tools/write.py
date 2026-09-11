@@ -1,6 +1,6 @@
 import os
 
-from core import config, _resolve_path  
+from core.core import config, _resolve_path  
 
 def write_file(file_path, content):
     print(f"Writing at {file_path} with content length {len(content)}")

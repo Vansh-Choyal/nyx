@@ -16,7 +16,9 @@ client = OpenAI(
     base_url="https://api.deepinfra.com/v1/openai", 
     api_key=os.getenv("DEEPINFRA_API_TOKEN"))
 
-context_manager.add_user_message("Change the snake's color to Blue. And first make the copy of the current game.")
+context_manager.add_user_message("""
+Read the project and tell me why does the model stuck after like 10-20 iterations. And how can I reduce the input token usage?
+""")
 # print(config['model'])
 
 # print(context_manager.context)

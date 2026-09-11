@@ -1,5 +1,5 @@
 import subprocess
-from core import config
+from core.core import config
 
 def run_command(cmd):
     print(f"Running command: {cmd}")
