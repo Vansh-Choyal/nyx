@@ -1,28 +1,23 @@
-from openai import OpenAI
+import json
+from pathlib import Path
 from dotenv import load_dotenv
-from core.context_manager import context_manager
+from openai import OpenAI
 import os
-from core.core import config
 from tools.terminal import run_command
 from tools.read import read_file
 from tools.grep import grep
 from tools.patch import patch_file
 from tools.write import write_file
-from core import startup
-
-import json
+from core.context_manager import context_manager
 
 load_dotenv()
 client = OpenAI(
     base_url="https://api.deepinfra.com/v1/openai", 
     api_key=os.getenv("DEEPINFRA_API_TOKEN"))
 
-context_manager.add_user_message("""
-Read the project and tell me why does the model stuck after like 10-20 iterations. And how can I reduce the input token usage?
-""")
-# print(config['model'])
+agents_raw = []
+agents = {}
 
-# print(context_manager.context)
 
 tools = [
     {
@@ -140,94 +135,136 @@ tools = [
     }
 ]
 
-while True:
-    resp = client.chat.completions.create(
-        model=config['model'],
-        messages=context_manager.context,
-        reasoning_effort="low",
-        stream=True,
-        tools=tools
-    )
+# Define the directory path
+directory_path = Path("agents/")
 
-    tools_queue = {}
-    generated_content = ""
+# Loop over everything inside the directory
+for item in directory_path.iterdir():
+    if item.is_file():
+        print(f"File: {item.name} | Full Path: {item}")
+        with open(item, 'r') as f:
+            agents_raw.append(json.load(f))
+    elif item.is_dir():
+        print(f"Folder: {item.name}")
 
-    for chunk in resp:
-        if not chunk.choices:
+class Agent():
+    def __init__(self, agent_name, model, system_prompt, tools_available, agents_allowed):
+        self.agent_name = agent_name
+        self.model = model
+        self.system_prompt = system_prompt
+        self.tools_available = tools_available
+        self.agents_allowed = agents_allowed
+
+        new_context = context_manager.create_context()
+        new_context.add_system_prompt(system_prompt)
+
+        self.context_id = new_context.context_id
+
+    def _get_context(self):
+        return context_manager.contexts[self.context_id]
+
+    def start_iteration(self, message):
+
+        while True:
+            resp = client.chat.completions.create(
+                model=self.model,
+                messages=self._get_context(),
+                reasoning_effort="low",
+                stream=True,
+                tools=tools
+            )
+
+            tools_queue = {}
+            generated_content = ""
+
+            for chunk in resp:
+                if not chunk.choices:
+                    break
+
+                delta = chunk.choices[0].delta
+
+                if delta.reasoning_content is not None:
+                    GREY = "\033[90m"
+                    RESET = "\033[0m"
+                    print(
+                        f"{GREY}{delta.reasoning_content}{RESET}",
+                        flush=True,
+                        end=""
+                    )
+
+                if delta.content is not None:
+                    generated_content += delta.content
+                    print(delta.content, flush=True, end="")
+
+                if delta.tool_calls:
+                    tool = delta.tool_calls[0]
+                    tool_index = str(tool.index)
+
+                    if tool_index not in tools_queue:
+                        tools_queue[tool_index] = {
+                            "id": tool.id or "",
+                            "name": "",
+                            "arguments": ""
+                        }
+
+                    if tool.function.name:
+                        tools_queue[tool_index]["name"] += tool.function.name
+
+                    if tool.function.arguments:
+                        tools_queue[tool_index]["arguments"] += tool.function.arguments
+
+            # print()
+
+            if tools_queue:
+                assistant_tool_calls = []
+
+                for queue in tools_queue.values():
+                    assistant_tool_calls.append({
+                        "id": queue["id"],
+                        "type": "function",
+                        "function": {
+                            "name": queue["name"],
+                            "arguments": queue["arguments"]
+                        }
+                    })
+
+                self._get_context().add_assistant_message(
+                    message=generated_content or None,
+                    tool_calls=assistant_tool_calls
+                )
+
+                # context_manager.context.append({
+                #     "role": "assistant",
+                #     "content": generated_content or None,
+                #     "tool_calls": assistant_tool_calls
+                # })
+
+                # Now execute tools and add their results
+                for queue in tools_queue.values():
+                    result = globals()[queue["name"]](
+                        **json.loads(queue["arguments"])
+                    )
+
+                    self._get_context().add_tool_response(
+                        queue["id"],
+                        result
+                    )
+
+                # Continue to next model generation
+                continue
+
+            # No tool call => model is finished
+            print("Stopping the task")
             break
 
-        delta = chunk.choices[0].delta
 
-        if delta.reasoning_content is not None:
-            GREY = "\033[90m"
-            RESET = "\033[0m"
-            print(
-                f"{GREY}{delta.reasoning_content}{RESET}",
-                flush=True,
-                end=""
-            )
 
-        if delta.content is not None:
-            generated_content += delta.content
-            print(delta.content, flush=True, end="")
+# print(agents_raw)
+print(f"Creating {len(agents_raw)} agent{"s" if len(agents_raw)>1 else''}")
 
-        if delta.tool_calls:
-            tool = delta.tool_calls[0]
-            tool_index = str(tool.index)
+for agent in agents_raw:
+    agents[agent["agent_name"]] = Agent(agent["agent_name"], agent["model"], agent["system_prompt"], agent["tools_available"], agent["agents_available"])
+    print(f"Created {agent["agent_name"]}.")
 
-            if tool_index not in tools_queue:
-                tools_queue[tool_index] = {
-                    "id": tool.id or "",
-                    "name": "",
-                    "arguments": ""
-                }
 
-            if tool.function.name:
-                tools_queue[tool_index]["name"] += tool.function.name
-
-            if tool.function.arguments:
-                tools_queue[tool_index]["arguments"] += tool.function.arguments
-
-    # print()
-
-    if tools_queue:
-        assistant_tool_calls = []
-
-        for queue in tools_queue.values():
-            assistant_tool_calls.append({
-                "id": queue["id"],
-                "type": "function",
-                "function": {
-                    "name": queue["name"],
-                    "arguments": queue["arguments"]
-                }
-            })
-
-        context_manager.context.append({
-            "role": "assistant",
-            "content": generated_content or None,
-            "tool_calls": assistant_tool_calls
-        })
-
-        # Now execute tools and add their results
-        for queue in tools_queue.values():
-            result = globals()[queue["name"]](
-                **json.loads(queue["arguments"])
-            )
-
-            context_manager.add_tool_response(
-                queue["id"],
-                result
-            )
-
-        # Continue to next model generation
-        continue
-
-    # No tool call => model is finished
-    print("Stopping the task")
-    break
-
-# print(resp.choices[0])
-# print(resp.choices[0].message.reasoning_content)
-# print("---")
-# print(resp.choices[0].message.content)
+print(context_manager.contexts)
