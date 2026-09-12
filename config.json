@@ -1,5 +1,6 @@
 {
     "model_name":"Nyx",
     "model": "Qwen/Qwen3.6-35B-A3B",
-    "current_directory": "C:\\Users\\Vansh\\Desktop\\VS Code Files\\WebsiteBuilder"
+    "current_directory": "C:\\Users\\Vansh\\Desktop\\VS Code Files\\WebsiteBuilder",
+    "default_agent": "main-agent"
 }

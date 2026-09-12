@@ -15,9 +15,7 @@ client = OpenAI(
     base_url="https://api.deepinfra.com/v1/openai", 
     api_key=os.getenv("DEEPINFRA_API_TOKEN"))
 
-agents_raw = []
-agents = {}
-
+agents: dict[str, Agent] = {}
 
 tools = [
     {
@@ -135,18 +133,6 @@ tools = [
     }
 ]
 
-# Define the directory path
-directory_path = Path("agents/")
-
-# Loop over everything inside the directory
-for item in directory_path.iterdir():
-    if item.is_file():
-        print(f"File: {item.name} | Full Path: {item}")
-        with open(item, 'r') as f:
-            agents_raw.append(json.load(f))
-    elif item.is_dir():
-        print(f"Folder: {item.name}")
-
 class Agent():
     def __init__(self, agent_name, model, system_prompt, tools_available, agents_allowed):
         self.agent_name = agent_name
@@ -165,10 +151,14 @@ class Agent():
 
     def start_iteration(self, message):
 
+        self._get_context().add_user_message(message)
+
+        print(f"Starting iteration for {self.agent_name} with Context ID {self.context_id}")
+
         while True:
             resp = client.chat.completions.create(
                 model=self.model,
-                messages=self._get_context(),
+                messages=self._get_context().context,
                 reasoning_effort="low",
                 stream=True,
                 tools=tools
@@ -259,12 +249,3 @@ class Agent():
 
 
 
-# print(agents_raw)
-print(f"Creating {len(agents_raw)} agent{"s" if len(agents_raw)>1 else''}")
-
-for agent in agents_raw:
-    agents[agent["agent_name"]] = Agent(agent["agent_name"], agent["model"], agent["system_prompt"], agent["tools_available"], agent["agents_available"])
-    print(f"Created {agent["agent_name"]}.")
-
-
-print(context_manager.contexts)
